@@ -6,6 +6,11 @@
 #include "Node.h"
 #include <queue>
 
+#ifdef UNICODE
+#pragma comment(linker, "/entry:wWinMainCRTStartup /subsystem:console")
+#else
+#pragma comment(linker, "/entry:WinMainCRTStartup /subsystem:console")
+#endif
 
 using namespace std;
 /*-------------------------------------*/
@@ -26,9 +31,9 @@ Status status;
 void AStar();
 void InitNodes();
 //도착점 -> 현재 사각형
-int GetHVal();
+int GetHVal(int i, int j);
 //시작점 -> 현재 사각형
-int GetGVal();
+int GetGVal(int i, int j, int pi, int pj);
 int GetFVal();
 Node* FindNode();
 void FindNodePos();
@@ -38,8 +43,9 @@ POINT StartNodePos;
 Node* EndNode;
 POINT EndNodePos;
 
+bool found;
 
-void SetNeighbor(int i, int j);
+void SetNeighbor();
 POINT dir[8] =
 {
 	POINT{0,1},
@@ -192,6 +198,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		InitNodes();
 		statusStr += "INITPROGRAM";
 		status = INITPROGRAM;
+		found = false;
 		break;
 	case WM_COMMAND:
 	{
@@ -313,7 +320,7 @@ void AStar()
 {
 	OpenPQ.push(*StartNode);
 	FindNodePos();
-	SetNeighbor(StartNodePos.x, StartNodePos.y);
+	SetNeighbor();
 }
 
 void InitNodes()
@@ -328,6 +335,63 @@ void InitNodes()
 		}
 		NVec.push_back(temp);
 	}
+}
+
+int GetHVal(int i, int j)
+{
+	int xDist = abs(j - EndNodePos.x);
+	int yDist = abs(i - EndNodePos.y);
+
+	int sum = 0;
+	while (xDist > 0 && yDist > 0)
+	{
+		sum += 14;
+		xDist -= 1;
+		yDist -= 1;
+	}
+	while (xDist > 0)
+	{
+		sum += 10;
+		xDist -= 1;
+	}
+	while (yDist > 0)
+	{
+		sum += 10;
+		yDist -= 1;
+	}
+	
+	return sum;
+}
+
+int GetGVal(int i, int j, int pi, int pj)
+{
+	int xDist = abs(j - pj);
+	int yDist = abs(i - pi);
+
+	int sum = 0;
+	while (xDist > 0 && yDist > 0)
+	{
+		sum += 14;
+		xDist -= 1;
+		yDist -= 1;
+	}
+	while (xDist > 0)
+	{
+		sum += 10;
+		xDist -= 1;
+	}
+	while (yDist > 0)
+	{
+		sum += 10;
+		yDist -= 1;
+	}
+
+	return sum;
+}
+
+int GetFVal()
+{
+	return 0;
 }
 
 Node* FindNode()
@@ -362,30 +426,43 @@ void FindNodePos()
 		}
 	}
 }
-void SetNeighbor(int i, int j)
+void SetNeighbor()
 {
 	//open pq에서 꺼내 closed 상태로
-	OpenPQ.pop();
-	//NVec[i][j]->SetStat(START);
-	//벽 바깥일 때, 장애물일 때, closed 배열에 있을 때 무시
-	for (int a = 0; a < 8; a++)
+	while (!OpenPQ.empty() && !found)
 	{
-		//벽 바깥일 때
-		if (i + dir[a].x < 0 || j + dir[a].y < 0)
-			continue;
-		//장애물일 때
-		if (NVec[i + dir[a].x][j + dir[a].y]->Getstat() == OBSTACLE)
-			continue;
-		//closed 배열에 있을 때
-		if (NVec[i + dir[a].x][j + dir[a].y]->Getstat() == NOWINCLOSED || NVec[i + dir[a].x][j + dir[a].y]->Getstat() == STARTPOINT)
-			continue;
+		printf("pq size : %d\n", OpenPQ.size());
+		Node temp = OpenPQ.top();
+		OpenPQ.pop();
+		int i = temp.GetIdx().x;
+		int j = temp.GetIdx().y;
+		
 
-		if (NVec[i + dir[a].x][j + dir[a].y]->Getstat() == NOWINOPEN)
+		//NVec[i][j]->SetStat(START);
+		//벽 바깥일 때, 장애물일 때, closed 배열에 있을 때 무시
+		for (int a = 0; a < 8; a++)
 		{
+			//벽 바깥일 때
+			if (i + dir[a].x < 0 || j + dir[a].y < 0)
+				continue;
+			//장애물일 때
+			if (NVec[i + dir[a].x][j + dir[a].y]->Getstat() == OBSTACLE)
+				continue;
+			//closed 배열에 있을 때
+			if (NVec[i + dir[a].x][j + dir[a].y]->Getstat() == NOWINCLOSED || NVec[i + dir[a].x][j + dir[a].y]->Getstat() == STARTPOINT)
+				continue;
 
+			if (NVec[i + dir[a].x][j + dir[a].y]->Getstat() == NOWINOPEN)
+			{
+				//값 비교해서 갱신
+			}
+			NVec[i + dir[a].x][j + dir[a].y]->SetStat(NOWINOPEN);
+			//h값, g값 구하는 로직
+			NVec[i + dir[a].x][j + dir[a].y]->SetH(GetHVal(i + dir[a].x, j + dir[a].y));
+			NVec[i + dir[a].x][j + dir[a].y]->SetG(GetGVal(i + dir[a].x, j + dir[a].y, i,j));
+			NVec[i + dir[a].x][j + dir[a].y]->SetF();
 		}
-		NVec[i + dir[a].x][j + dir[a].y]->SetStat(NOWINOPEN);
-
 	}
+	
 	//open pq에 있다면 
 }

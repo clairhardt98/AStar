@@ -5,6 +5,7 @@ Node::Node(int i, int j)
 	val_G = val_H = val_F = 0;
 
 	SetCenter(i, j);
+	Idx = POINT{ i,j };
 	SetRect();
 	SetValPos();
 
@@ -80,16 +81,16 @@ void Node::Draw(HDC hdc)
 		SelectObject(hdc, CreateSolidBrush(RGB(255, 255, 255)));
 	}
 
-	std::string temp;
+	
 	Rectangle(hdc, rect.left, rect.top, rect.right, rect.bottom);
 	
-	
+	TCHAR str[128];
 
 	if (stat == STARTPOINT || stat == OBSTACLE)return;
-	temp = std::to_string(val_G);
-	TextOut(hdc, GValPos.x, GValPos.y, (TCHAR*)(temp.c_str()), temp.size());
-	temp = std::to_string(val_H);
-	TextOut(hdc, HValPos.x, HValPos.y, (TCHAR*)(temp.c_str()), temp.size());
-	temp = std::to_string(val_F);
-	TextOut(hdc, FValPos.x, FValPos.y, (TCHAR*)(temp.c_str()), temp.size());
+	wsprintf(str, TEXT("%d"), val_G);
+	TextOut(hdc, GValPos.x, GValPos.y, str, lstrlen(str));
+	wsprintf(str, TEXT("%d"), val_H);
+	TextOut(hdc, HValPos.x, HValPos.y, str, lstrlen(str));
+	wsprintf(str, TEXT("%d"), val_F);
+	TextOut(hdc, FValPos.x, FValPos.y, str, lstrlen(str));
 }
